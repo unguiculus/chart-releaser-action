@@ -19,6 +19,7 @@ set -o nounset
 set -o pipefail
 
 DEFAULT_CHART_RELEASER_VERSION=v0.2.3
+HELM_VERSION=v2.16.1
 
 : "${CR_TOKEN:?Environment variable CR_TOKEN must be set}"
 
@@ -59,6 +60,7 @@ main() {
 
     if [[ -n "${changed_charts[*]}" ]]; then
         install_chart_releaser
+        install_helm
 
         rm -rf .cr-release-packages
         mkdir -p .cr-release-packages
@@ -161,12 +163,23 @@ parse_command_line() {
     fi
 }
 
+install_helm() {
+    echo "Installing Helm..."
+
+    curl -sSLo helm.tar.gz "https://kubernetes-helm.storage.googleapis.com/helm-$HELM_VERSION-linux-amd64.tar.gz"
+    tar -xzf helm.tar.gz
+    sudo mv linux-amd64/helm /usr/local/bin/
+    rm -rf linux-amd64 helm.tar.gz
+    helm init --client-only
+}
+
 install_chart_releaser() {
     echo "Installing chart-releaser..."
 
     curl -sSLo cr.tar.gz "https://github.com/helm/chart-releaser/releases/download/$version/chart-releaser_${version#v}_linux_amd64.tar.gz"
     tar -xzf cr.tar.gz
-    sudo mv cr /usr/local/bin/cr
+    rm -rf cr.tar.gz
+    sudo mv cr /usr/local/bin/
 }
 
 lookup_latest_tag() {
